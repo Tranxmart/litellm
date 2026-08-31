@@ -307,14 +307,10 @@ class LiteLLMCompletionResponsesConfig:
         if reasoning_param:
             if isinstance(reasoning_param, dict):
                 # reasoning can be {"effort": "low|medium|high", "summary": "detailed"}
-                # Keep the full dict when summary is set so the responses API bridge can
-                # forward it; otherwise use the effort string for chat completion (e.g. Gemini).
-                if "summary" in reasoning_param:
-                    reasoning_effort = reasoning_param
-                elif "effort" in reasoning_param:
-                    reasoning_effort = reasoning_param.get("effort")
-                else:
-                    reasoning_effort = reasoning_param
+                # Chat Completion providers expect reasoning_effort as a level string.
+                # The Responses API object may also contain bridge-only fields such as
+                # summary/context; keep only effort and omit the parameter if absent.
+                reasoning_effort = reasoning_param.get("effort")
             elif isinstance(reasoning_param, str):
                 # reasoning could be a string directly
                 reasoning_effort = reasoning_param
