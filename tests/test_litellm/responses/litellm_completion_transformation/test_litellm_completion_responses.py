@@ -2,7 +2,6 @@ import json
 
 import pytest
 
-
 from litellm.responses.litellm_completion_transformation.transformation import (
     TOOL_CALLS_CACHE,
     LiteLLMCompletionResponsesConfig,
@@ -20,6 +19,44 @@ from litellm.types.utils import (
 
 
 class TestLiteLLMCompletionResponsesConfig:
+    @pytest.mark.parametrize(
+        ("reasoning", "expected_effort"),
+        [
+            (
+                {"effort": "high", "summary": "detailed", "context": "all_turns"},
+                "high",
+            ),
+            ({"effort": "xhigh", "summary": "auto"}, "xhigh"),
+            ("medium", "medium"),
+        ],
+    )
+    def test_responses_reasoning_effort_is_normalized_for_chat_bridge(
+        self, reasoning, expected_effort
+    ):
+        """Chat bridge receives a level string, not a Responses reasoning object."""
+        result = LiteLLMCompletionResponsesConfig.transform_responses_api_request_to_chat_completion_request(
+            model="custom-model",
+            input="hello",
+            responses_api_request={"input": "hello", "reasoning": reasoning},
+            custom_llm_provider="custom_openai",
+        )
+
+        assert result["reasoning_effort"] == expected_effort
+
+    def test_responses_reasoning_without_effort_is_omitted_for_chat_bridge(self):
+        """A summary/context-only object must not leak as an invalid Chat parameter."""
+        result = LiteLLMCompletionResponsesConfig.transform_responses_api_request_to_chat_completion_request(
+            model="custom-model",
+            input="hello",
+            responses_api_request={
+                "input": "hello",
+                "reasoning": {"summary": "detailed", "context": "all_turns"},
+            },
+            custom_llm_provider="custom_openai",
+        )
+
+        assert "reasoning_effort" not in result
+
     def test_transform_input_file_item_to_file_item_with_file_id(self):
         """Test transformation of input_file item with file_id to Chat Completion file format"""
         # Setup
