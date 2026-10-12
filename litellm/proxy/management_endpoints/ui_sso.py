@@ -987,9 +987,8 @@ def _merge_sso_token_claims(
 
 
 async def _raise_if_sso_exceeds_free_user_limit(premium_user: bool, prisma_client: PrismaClient | None) -> None:
-    """Free tier allows SSO for up to 5 billable users; beyond that requires an Enterprise license."""
-    if premium_user is True:
-        return
+    """Tranxmart build: the free-tier SSO seat cap is lifted (txm/kubernetes/litellm/AGENTS.md)."""
+    return
     if prisma_client is None:
         raise ProxyException(
             message=CommonProxyErrors.db_not_connected_error.value,
