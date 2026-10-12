@@ -1,0 +1,6 @@
+FROM ghcr.io/berriai/litellm-database:v1.100.0-rc.1
+
+ARG SITE_PACKAGES=/app/.venv/lib/python3.13/site-packages/litellm
+
+COPY litellm/responses/litellm_completion_transformation/transformation.py ${SITE_PACKAGES}/responses/litellm_completion_transformation/transformation.py
+COPY litellm/proxy/management_endpoints/ui_sso.py ${SITE_PACKAGES}/proxy/management_endpoints/ui_sso.py
