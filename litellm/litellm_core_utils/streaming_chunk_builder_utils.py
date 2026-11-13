@@ -724,6 +724,8 @@ class ChunkProcessor:
         )
 
     def _usage_chunk_calculation_helper(self, usage_chunk: Usage) -> "_UsageSummary":
+        if not isinstance(usage_chunk, (Usage, dict)) and hasattr(usage_chunk, "model_dump"):
+            usage_chunk = Usage(**usage_chunk.model_dump())
         prompt_tokens = 0
         completion_tokens = 0
         ## anthropic prompt caching information ##

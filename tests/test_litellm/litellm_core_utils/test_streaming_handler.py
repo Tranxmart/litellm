@@ -4692,3 +4692,59 @@ async def test_async_stream_assembled_response_keeps_vertex_traffic_type(logging
     assembled = litellm.stream_chunk_builder(chunks=received, messages=[{"role": "user", "content": "hi"}])
     assert assembled is not None
     assert assembled._hidden_params["provider_specific_fields"]["traffic_type"] == "ON_DEMAND_FLEX"
+
+
+def _openai_sdk_chunks():
+    from openai.types.chat.chat_completion_chunk import ChatCompletionChunk
+    from openai.types.completion_usage import (
+        CompletionTokensDetails,
+        CompletionUsage,
+        PromptTokensDetails,
+    )
+
+    def chunk(content, finish_reason=None, usage=None):
+        return ChatCompletionChunk(
+            id="chatcmpl-ark",
+            created=1763000000,
+            model="deepseek-v4-1-flash-261017",
+            object="chat.completion.chunk",
+            choices=[{"index": 0, "delta": {"role": "assistant", "content": content}, "finish_reason": finish_reason}],
+            usage=usage,
+        )
+
+    # Volcengine Ark puts usage on the finish_reason chunk, not on a separate usage-only chunk.
+    return [
+        chunk("O"),
+        chunk(
+            "K",
+            finish_reason="stop",
+            usage=CompletionUsage(
+                prompt_tokens=11243,
+                completion_tokens=16,
+                total_tokens=11259,
+                prompt_tokens_details=PromptTokensDetails(cached_tokens=11136),
+                completion_tokens_details=CompletionTokensDetails(reasoning_tokens=16),
+            ),
+        ),
+    ]
+
+
+@pytest.mark.parametrize("include_usage", [True, False])
+def test_openai_sdk_usage_keeps_cached_tokens(logging_obj: Logging, include_usage: bool):
+    stream = CustomStreamWrapper(
+        completion_stream=iter(_openai_sdk_chunks()),
+        model="deepseek-v4-1-flash-261017",
+        logging_obj=logging_obj,
+        custom_llm_provider="openai",
+        stream_options={"include_usage": True} if include_usage else None,
+    )
+    returned = list(stream)
+
+    usage = litellm.stream_chunk_builder(chunks=stream.chunks, messages=[{"role": "user", "content": "x"}]).usage
+    assert (usage.prompt_tokens, usage.completion_tokens) == (11243, 16)
+    assert usage.prompt_tokens_details.cached_tokens == 11136
+
+    if include_usage:
+        client_usage = [c.usage for c in returned if getattr(c, "usage", None) is not None][-1]
+        assert client_usage.prompt_tokens_details.cached_tokens == 11136
+        assert client_usage.completion_tokens == 16

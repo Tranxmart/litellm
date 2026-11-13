@@ -1423,3 +1423,19 @@ def test_calculate_usage_fills_unknown_split_from_reasoning_estimate(
     assert usage.completion_tokens == 100
     assert usage.completion_tokens_details.reasoning_tokens == expected_reasoning_tokens
     assert usage.completion_tokens_details.text_tokens == expected_text_tokens
+
+
+def test_usage_chunk_calculation_helper_accepts_openai_sdk_usage():
+    from openai.types.completion_usage import CompletionUsage
+    from openai.types.completion_usage import PromptTokensDetails as OpenAIPromptTokensDetails
+
+    sdk_usage = CompletionUsage(
+        prompt_tokens=11243,
+        completion_tokens=16,
+        total_tokens=11259,
+        prompt_tokens_details=OpenAIPromptTokensDetails(cached_tokens=11136),
+    )
+    summary = ChunkProcessor._usage_chunk_calculation_helper(None, sdk_usage)  # type: ignore[arg-type]
+    assert summary["prompt_tokens"] == 11243
+    assert summary["completion_tokens"] == 16
+    assert summary["prompt_tokens_details"].cached_tokens == 11136

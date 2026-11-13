@@ -1656,7 +1656,12 @@ class CustomStreamWrapper:
                 self.tool_call = True
 
             if hasattr(chunk, "usage") and chunk.usage is not None:
-                model_response.usage = chunk.usage
+                # The openai SDK's CompletionUsage is not a Usage: the chunk builder's
+                # `in` checks and isinstance branches miss it, zeroing completion
+                # tokens and dropping prompt_tokens_details (cached_tokens).
+                model_response.usage = (
+                    chunk.usage if isinstance(chunk.usage, Usage) else Usage(**chunk.usage.model_dump())
+                )
 
             ## RETURN ARG
             result: Final = self.return_processed_chunk_logic(

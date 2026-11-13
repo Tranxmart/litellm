@@ -4,3 +4,5 @@ ARG SITE_PACKAGES=/app/.venv/lib/python3.13/site-packages/litellm
 
 COPY litellm/responses/litellm_completion_transformation/transformation.py ${SITE_PACKAGES}/responses/litellm_completion_transformation/transformation.py
 COPY litellm/proxy/management_endpoints/ui_sso.py ${SITE_PACKAGES}/proxy/management_endpoints/ui_sso.py
+COPY litellm/litellm_core_utils/streaming_handler.py ${SITE_PACKAGES}/litellm_core_utils/streaming_handler.py
+COPY litellm/litellm_core_utils/streaming_chunk_builder_utils.py ${SITE_PACKAGES}/litellm_core_utils/streaming_chunk_builder_utils.py
